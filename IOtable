@@ -1,0 +1,68 @@
+import pandas as pd
+import numpy as np
+def get_data(file):#导入数据
+    data=pd.read_table(file,sep='\t',header=None,)
+    return data
+def deal_data(df):#变为矩阵
+    df=df.fillna(value=0)#以零填充NAN
+    df=df.iloc[4:,4:]#切片
+    df=df.values#将dataframe转为矩阵，自此元数据的第五行第五列变成了矩阵的第1行第1列，索引为[0,0]
+    df=df.astype('float')
+    #print(df)
+    return df
+def get_a(matrix):#获取 行和与列和
+    xi=matrix.sum(axis=1)#行求和返回一维数组
+    xj=matrix.sum(axis=0)#列求和返回一维数组
+    #print(xi.shape)
+    #print(xj.shape)
+    row=matrix.shape[0]
+    col=matrix.shape[1]
+    #print(xi)#各部门同出口至各国出口的和
+    #print(xj)#各部门同进口自各国之和
+    A=[]
+    for i in range(123):
+        for j in range(123):
+            aij=matrix[i,j]/xj[j]
+            A.append(aij)
+    A=np.array(A).T#列表转换为矩阵此时为（126*126,1）
+    A=A.reshape(123,123)#此刻转置出所得中间消耗系数矩阵AIJ
+    return A
+def get_bij(AIJ):
+    I=np.ones(123)
+    E=np.diag(I)
+    mid=I-AIJ
+    MID=np.matrix(mid)#将运算结果重新转换为矩阵
+    L=MID.I#得到列昂惕夫系数矩阵
+    BIJ=L-E
+    return BIJ
+def get_energy_data(state_data):
+    energy=state_data[319:328,:]#9*319九种能源分别为
+    energy=energy.sum(axis=0)#列累加得出
+    energy=energy[:123]
+    # 1.gas,2.coal,3.petroleum,4.nuclear electricity,5.hydroelectric electricity,6.geothermal elelctricity,7.wind electricity,8.solar tide and wave electricity9.biomass and other waste energy
+    co2=state_data[328:383,:]#55*319需要累加
+    water=state_data[2793:2821,:]#28*319需要处理
+    return energy
+    #print(water.shape)
+def get_IOT_tabel(table):#得到行向量
+    A=table[:319,:319]
+    a=np.zeros(123)
+    a_sum_col=A.sum(axis=0)#列和
+    a_sum_row=A.sum(axis=1)#行向量之和
+    a = a_sum_row[0:123]
+    return a
+file='IO_CHN_1970_BasicPrice.txt'
+df=get_data(file)
+matrix=deal_data(df)
+A=get_a(matrix)
+BIJ=get_bij(A)
+energy_data=get_energy_data(matrix)
+energy_data=np.array(energy_data)
+XI=get_IOT_tabel(matrix)
+energy_intensity=[]
+for i in range(0,123):
+    eij=energy_data[i]/XI[i]
+    energy_intensity.append(eij)
+energy_intensity=np.array(energy_intensity)
+print(energy_intensity.shape)
+#print(BIJ)
